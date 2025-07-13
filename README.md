@@ -15,3 +15,62 @@ The hardware was connected as shown in the image below.
 
 ![Alt text](Images/Motor%20Speed%20DAQ%20Annotated.JPG)
 
+- A power supply of 5.2 V is used for the power rails because the voltage received from the HPAC-08 trainer is 5.2V
+- Buffer is used for impedance matching and isolation
+
+## Low Pass Filter
+
+- A low pass filter is used to filter the circuit with a cutoff frequency of 30 Hz.
+  f<sub>cutoff</sub> = 30 Hz. This value is taken from the oscilloscope.
+- By utilizing the following equation, f<sub>c</sub> = 1 / 2πRC
+
+## Impedance Matching
+- Causes a voltage drop between high impedance souce and low impedance load.
+
+    <pre> [High-Z Sensor] --(1MΩ)--|--(10kΩ)-- [ADC input] </pre>
+
+- This creates a voltage divider  
+    ```
+    [SOURCE] ----[R_source]----+----[R_load]---- GND
+                               |
+                               +--> V_measured (to ADC)
+    ```
+
+    V<sub>measured</sub> = V<sub>source</sub> × (R<sub>load</sub> / (R<sub>source</sub> + R<sub>load</sub>))
+
+    V<sub>source</sub> = 1.0 V
+
+    R<sub>source</sub> = 100K Ω
+
+    R<sub>load</sub> = 10K Ω
+
+    V<sub>measured</sub> = 0.091 V
+
+    Only 91mV instead of 1 V
+
+    ### Solution
+
+    ```
+    [SOURCE] ----[R_source]---- [Op-Amp Buffer] ----[Low-Z Load]
+                           ↑
+                    High input impedance (~1MΩ+)
+    ```
+
+    V<sub>measured</sub> = V<sub>source</sub> × (∞ / (R<sub>source</sub> + ∞)) = V<sub>source</sub>
+
+- Op Amp prevents current draw which preserves the source signal
+
+    ```
+    [Buffer output] --(1kΩ)---+---(10kΩ)--- GND
+                            |
+                        V_measured
+    ```
+
+    V<sub>measured</sub> = V<sub>buffer</sub> × ( 10K / ( 10K + 1K )) = 0.909 x V<sub>buffer</sub>
+
+    9% Loss in signal
+
+    If Resistance is < 10 Ω
+    
+    V<sub>measured</sub> = V<sub>buffer</sub> × ( 10K / ( 10 + 10K )) = 0.999 x V<sub>buffer</sub>
+    
