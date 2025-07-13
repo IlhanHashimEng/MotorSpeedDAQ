@@ -11,7 +11,9 @@ This project is created to build a Data Acquisition System (DAQ) for measuring m
 - 1 0.7 uF Capacitor
 - Variable Power Supply
 
-The hardware was connected as shown in the image below.
+The hardware was connected as shown in the image below. Please refer to the datasheet  for LM324 Op Amp Pinout
+
+## HARDWARE SETUP
 
 ![Alt text](Images/Motor%20Speed%20DAQ%20Annotated.JPG)
 
@@ -22,7 +24,12 @@ The hardware was connected as shown in the image below.
 
 - A low pass filter is used to filter the circuit with a cutoff frequency of 30 Hz.
   f<sub>cutoff</sub> = 30 Hz. This value is taken from the oscilloscope.
-- By utilizing the following equation, f<sub>c</sub> = 1 / 2πRC
+- By utilizing the following equation, f<sub>c</sub> = 1 / 2πRC, the resistor is arbitratily set to 5.6K Ω. Then by utilizing the equation, a capacitance of 0.9 µF was calculated. However, only a 0.7 µF was available.
+
+## Comparator
+
+- Converts the analog signal into a digital signal with reference to a desired voltage. A voltage divider is used to create a 3.3 V reference from a 6 V source.
+- When the voltage from the second buffer is more than 3.3 V, the comparator outputs a HIGH signal. when it is lower than 3.3 V, it outputs a LOW signal
 
 ## Impedance Matching
 - Causes a voltage drop between high impedance souce and low impedance load.
@@ -73,4 +80,5 @@ The hardware was connected as shown in the image below.
     If Resistance is < 10 Ω
     
     V<sub>measured</sub> = V<sub>buffer</sub> × ( 10K / ( 10 + 10K )) = 0.999 x V<sub>buffer</sub>
-    
+
+## SOFTWARE SETUP
