@@ -26,10 +26,18 @@ The hardware was connected as shown in the image below. Please refer to the data
   f<sub>cutoff</sub> = 30 Hz. This value is taken from the oscilloscope.
 - By utilizing the following equation, f<sub>c</sub> = 1 / 2πRC, the resistor is arbitratily set to 5.6K Ω. Then by utilizing the equation, a capacitance of 0.9 µF was calculated. However, only a 0.7 µF was available.
 
+![Alt Text](Images/filtered%20signal.JPG)
+
 ## Comparator
 
 - Converts the analog signal into a digital signal with reference to a desired voltage. A voltage divider is used to create a 3.3 V reference from a 6 V source.
 - When the voltage from the second buffer is more than 3.3 V, the comparator outputs a HIGH signal. when it is lower than 3.3 V, it outputs a LOW signal
+
+![Alt Text](Images/comparator%20signal.JPG)
+
+## Step Down
+
+- A voltage divider is used to step down the 5.2 V to 3.3 V  to be used in the Raspberry Pi. This is because the Pi can only accept up to 3.3V as an input signal.
 
 ## Impedance Matching
 - Causes a voltage drop between high impedance souce and low impedance load.
