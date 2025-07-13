@@ -13,5 +13,5 @@ This project is created to build a Data Acquisition System (DAQ) for measuring m
 
 The hardware was connected as shown in the image below.
 
-![Alt text](images/Motor%20Speed%20DAQ%20Annotated.JPG)
+![Alt text](Images/Motor%20Speed%20DAQ%20Annotated.JPG)
 
