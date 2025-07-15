@@ -90,3 +90,21 @@ The hardware was connected as shown in the image below. Please refer to the data
     V<sub>measured</sub> = V<sub>buffer</sub> × ( 10K / ( 10 + 10K )) = 0.999 x V<sub>buffer</sub>
 
 ## SOFTWARE SETUP
+
+Clone this project into a folder
+
+```
+git clone https://github.com/IlhanHashimEng/MotorSpeedDAQ.git
+```
+
+Then move into the src folder
+
+```
+cd src
+```
+
+Run the python script
+
+```
+python main.py
+```
