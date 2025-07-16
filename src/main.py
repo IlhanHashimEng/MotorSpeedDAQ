@@ -1,4 +1,4 @@
-import RPi.GPIO as gpio
+import RPi.GPIO as GPIO
 import csv
 import threading
 import matplotlib.pyplot as plt
@@ -9,9 +9,10 @@ from math import pi
 from time import time, sleep
 
 # Constants
-GPIO_CHIP = 'gpiochip4'
-INPUT_LINE = 17
+trig = False
+INPUT_PIN = 17
 CSV_FILE = 'Motor_Speed_Measurement_System.csv'
+ENCODER_RES = 12
 
 # Initialize CSV file with headers
 def initialize_csv():
@@ -27,34 +28,37 @@ def append_csv(timestamp, method, frequency, angular_velocity_rpm, angular_veloc
 
 # GPIO settings
 def gpio_setup():
-    chip = gpiod.Chip(GPIO_CHIP)
-    input_line = chip.get_line(INPUT_LINE)
-    input_line.request(consumer="Motor_Speed_Measurement", type=gpiod.LINE_REQ_EV_RISING_EDGE)
-    return input_line
+    GPIO.setmode(GPIO.BCM)
+    GPIO.setup(INPUT_PIN, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+    return INPUT_PIN
 
 # Pulse Counter with Rising Edge Detection
-def count_pulses(input_line, timeout_sec=None, pulse_limit=None):
+def count_pulses(input_pin, timeout_sec=None, pulse_limit=None):
     count = 0
     start_time = time()
     events = []
-    while True:
-        event = input_line.event_wait(sec=timeout_sec)
-        if event:
-            count += 1
-            timestamp = time()
-            events.append(timestamp)
+
+    def pulse_callback(channel):
+        nonlocal count
+        count += 1
+        events.append(time())
+
+    GPIO.add_event_detect(input_pin, GPIO.RISING, callback=pulse_callback)
+
+    try:
+        while True:
+            if timeout_sec and (time() - start_time) >= timeout_sec:
+                break
             if pulse_limit and count >= pulse_limit:
                 break
-        else:
-            break
+            sleep(0.01)
+    finally:
+        GPIO.remove_event_detect(input_pin)
 
-        # If timeout is set and exceeded
-        if timeout_sec and (timestamp - start_time) >= timeout_sec:
-            break
     return count, events
 
 # Method 1: Fixed Time Interval
-def fixed_time(input_line):
+def fixed_time(input_pin):
     while True:
         try:
             period = int(input("Enter time interval (1 - 9 seconds): "))
@@ -67,28 +71,27 @@ def fixed_time(input_line):
 
     print(f"Counting pulses for {period} seconds.....")
     start_time = time()
-    count, events = count_pulses(input_line, timeout_sec=period)
+    count, events = count_pulses(input_pin, timeout_sec=period)
     end_time = time()
     elapsed_time = end_time - start_time
 
-    # Angular velocity and frequency calculations
-    angular_velocity_rpm = (count * 60) / (period * 12)
+    angular_velocity_rpm = (count * 60) / (period * ENCODER_RES)
     angular_velocity_rad_s = (angular_velocity_rpm * 2 * pi) / 60
     frequency = count / period
 
-    # Display results
+    print("\n--------Fixed Time Results--------\n")
     print(f"Pulse Count: {count}")
     print(f"Elapsed Time: {elapsed_time:.2f} seconds")
     print(f"Frequency: {frequency:.3f} Hz")
     print(f"Angular Velocity: {angular_velocity_rpm:.3f} RPM")
     print(f"Angular Velocity: {angular_velocity_rad_s:.3f} rad/s")
+    print("\n---------------------------------------\n")
 
-    # Append to CSV
     timestamp = datetime.now().strftime("%d/%m/%Y, %H:%M:%S")
     append_csv(timestamp, "Fixed Time Interval", frequency, angular_velocity_rpm, angular_velocity_rad_s)
 
 # Method 2: Fixed Number of Pulses
-def fixed_pulses(input_line):
+def fixed_pulses(input_pin):
     while True:
         try:
             pulse_limit = int(input("Enter number of pulses to count (1 - 100): "))
@@ -101,7 +104,7 @@ def fixed_pulses(input_line):
 
     print(f"Counting {pulse_limit} pulses.....")
     start_time = time()
-    count, events = count_pulses(input_line, pulse_limit=pulse_limit)
+    count, events = count_pulses(input_pin, pulse_limit=pulse_limit)
     end_time = time()
     elapsed_time = end_time - start_time
 
@@ -111,19 +114,18 @@ def fixed_pulses(input_line):
         angular_velocity_rad_s = 0
         print("Error in measurement!")
     else:
-        # Angular velocity and frequency calculations
         frequency = count / elapsed_time
-        angular_velocity_rpm = (count * 60) / (elapsed_time * 12)
+        angular_velocity_rpm = (count * 60) / (elapsed_time * ENCODER_RES)
         angular_velocity_rad_s = (angular_velocity_rpm * 2 * pi) / 60
 
-    # Display results
+    print("\n--------Fixed Pulses Results--------\n")
     print(f"Pulse Count: {count}")
     print(f"Elapsed Time: {elapsed_time:.2f} seconds")
     print(f"Frequency: {frequency:.3f} Hz")
     print(f"Angular Velocity: {angular_velocity_rpm:.3f} RPM")
     print(f"Angular Velocity: {angular_velocity_rad_s:.3f} rad/s")
+    print("\n--------------------------------------------\n")
 
-    # Append to CSV
     timestamp = datetime.now().strftime("%d/%m/%Y, %H:%M:%S")
     append_csv(timestamp, "Fixed Pulse Count", frequency, angular_velocity_rpm, angular_velocity_rad_s)
 
@@ -154,7 +156,6 @@ def animate_data():
                     ys_rad_s.append(float(row[3]))
                     ys_frequency.append(float(row[4]))
 
-            # Clear and plot each subplot
             ax1.clear()
             ax1.plot(xs, ys_rpm, label='Angular Velocity (RPM)', color='blue')
             ax1.set_ylabel('RPM')
@@ -166,7 +167,7 @@ def animate_data():
             ax3.clear()
             ax3.plot(xs, ys_frequency, label='Frequency (Hz)', color='red')
             ax3.set_xlabel('Timestamp')
-            ax3.set_ylabel('Frequency (Hz)')
+            ax3.set_ylabel('Hz')
 
             fig.autofmt_xdate()
             plt.tight_layout()
@@ -174,36 +175,35 @@ def animate_data():
         except Exception as e:
             print(f"Error in animation: {e}")
 
-    ani = animation.FuncAnimation(fig, animate, interval=1000)
+    ani = animation.FuncAnimation(fig, animate, interval=1000, cache_frame_data=False)
     plt.show()
 
 # Menu Display
 def display_menu():
-    print("\n######## Motor Speed Measurement System ########\n")
+    print("\n-------------Group 5 Motor Speed Measurement System-------------\n")
+    print("1. ILHAN HASHIM BIN MOHD NOR FAZLY\n2. TAN KAI XIAN\n3. ARSYAD HILMI\n4. DANISH KLOPP\n")
     print("Please select the measuring method: ")
-    print("[1] Fixed Time Interval")
-    print("[2] Fixed Pulse Count")
+    print("[1] Fixed Time ")
+    print("[2] Fixed Pulse ")
     print("[3] Exit program")
 
 # Main program
 def main():
-    initialize_csv()
-    input_line = gpio_setup()
+    # initialize_csv()
+    input_pin = gpio_setup()
     print("GPIO initialized")
-
-    # Start animation in a separate thread
-    anim_thread = threading.Thread(target=animate_data, daemon=True)
-    anim_thread.start()
 
     while True:
         display_menu()
         choice = input("Enter your choice (1 - 3): ").strip()
 
         if choice == '1':
-            fixed_time(input_line)
+            fixed_time(input_pin)
+            animate_data()
 
         elif choice == '2':
-            fixed_pulses(input_line)
+            fixed_pulses(input_pin)
+            animate_data()
 
         elif choice == '3':
             print("Exiting the program")
@@ -212,10 +212,12 @@ def main():
         else:
             print("Invalid input.")
 
+    GPIO.cleanup()
+
 # Execute program
 if __name__ == "__main__":
     try:
         main()
-
     except KeyboardInterrupt:
         print("\nProgram terminated by user.")
+        GPIO.cleanup()
